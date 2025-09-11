@@ -1,37 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fullscreen Video Player</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: black;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  video {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain; /* cover to fill completely */
-    background: black;
-  }
-
-  /* Optional: hide controls on mobile until touched */
-  video::-webkit-media-controls {
-    display: none !important;
-  }
-</style>
-</head>
-<body>
-
 <video id="video" autoplay playsinline controls muted>
   <source id="videoSource" src="" type="video/mp4">
   Your browser does not support HTML5 video.
@@ -41,7 +7,6 @@
   const video = document.getElementById('video');
   const source = document.getElementById('videoSource');
 
-  // Get video URL from query parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
 
@@ -53,32 +18,19 @@
     alert('No video URL provided!');
   }
 
-  // Try to lock orientation to landscape on supported devices
+  // Lock orientation
   if (screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('landscape').catch(() => {
-      console.log('Orientation lock failed');
-    });
+    screen.orientation.lock('landscape').catch(() => console.log('Orientation lock failed'));
   }
 
-  // Fullscreen on touch/click
-  const enterFullScreen = () => {
-    if (video.requestFullscreen) {
-      video.requestFullscreen().catch(()=>{});
-    } else if (video.webkitEnterFullscreen) {
-      video.webkitEnterFullscreen(); // Safari / iOS
-    }
-  };
+  // Fullscreen on double-click to avoid hiding controls
+  video.addEventListener('dblclick', () => {
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  });
 
-  // Click anywhere on video or body to enter fullscreen
-  video.addEventListener('click', enterFullScreen);
-  document.body.addEventListener('click', enterFullScreen);
-
-  // Autoplay video when page is loaded (some browsers block if muted is false)
   window.addEventListener('load', () => {
-    video.muted = true; // Required for autoplay on mobile
+    video.muted = true;
     video.play().catch(() => console.log('Autoplay blocked'));
   });
 </script>
-
-</body>
-</html>
