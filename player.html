@@ -1,4 +1,45 @@
-<video id="video" autoplay playsinline controls muted>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fullscreen Video Player</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    background: black;
+  }
+
+  #instructions {
+    position: absolute;
+    color: white;
+    font-size: 16px;
+    z-index: 10;
+    top: 10px;
+    text-align: center;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<div id="instructions">Tap the video to unmute and enter fullscreen</div>
+
+<video id="video" autoplay playsinline muted controls>
   <source id="videoSource" src="" type="video/mp4">
   Your browser does not support HTML5 video.
 </video>
@@ -6,7 +47,9 @@
 <script>
   const video = document.getElementById('video');
   const source = document.getElementById('videoSource');
+  const instructions = document.getElementById('instructions');
 
+  // Get video URL from query parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
 
@@ -18,19 +61,22 @@
     alert('No video URL provided!');
   }
 
-  // Lock orientation
+  // Fullscreen and unmute on first tap
+  const enableFullscreenAndSound = () => {
+    video.muted = false;
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iOS
+    instructions.style.display = 'none';
+    video.removeEventListener('click', enableFullscreenAndSound);
+  };
+
+  video.addEventListener('click', enableFullscreenAndSound);
+
+  // Lock landscape on supported devices
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(() => console.log('Orientation lock failed'));
   }
-
-  // Fullscreen on double-click to avoid hiding controls
-  video.addEventListener('dblclick', () => {
-    if (video.requestFullscreen) video.requestFullscreen();
-    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-  });
-
-  window.addEventListener('load', () => {
-    video.muted = true;
-    video.play().catch(() => console.log('Autoplay blocked'));
-  });
 </script>
+
+</body>
+</html>
