@@ -26,4 +26,6 @@ jobs:
       - name: Run Bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: python KMZMM/bot.py
+        run: python KMZMM/KMZMM/bot.py
+
+
