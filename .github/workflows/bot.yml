@@ -23,9 +23,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Debug - Show files
+        run: ls -R
+
       - name: Run Bot
+        working-directory: ${{ github.workspace }}
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: python KMZMM/KMZMM/bot.py
-
-
+        run: python bot.py
