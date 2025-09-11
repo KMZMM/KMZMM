@@ -60,7 +60,7 @@
     transition: opacity 0.5s ease;
   }
 
-  /* Loading overlay with percentage */
+  /* Loading overlay */
   #loadingOverlay {
     position: fixed;
     top: 0;
@@ -94,12 +94,6 @@
     color: white;
     font-size: 16px;
     margin-bottom: 10px;
-  }
-  
-  #loadingPercentage {
-    color: #ff3366;
-    font-size: 24px;
-    font-weight: bold;
   }
   
   /* Progress bar container */
@@ -211,6 +205,30 @@
     max-width: 300px;
     line-height: 1.5;
   }
+  
+  /* Fullscreen styles */
+  :fullscreen #videoContainer {
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Exit button for fullscreen */
+  #exitFullscreenBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    backdrop-filter: blur(5px);
+  }
 </style>
 </head>
 <body>
@@ -220,7 +238,6 @@
 <div id="loadingOverlay">
   <div id="loadingSpinner"></div>
   <div id="loadingText">Loading video</div>
-  <div id="loadingPercentage">0%</div>
 </div>
 
 <div id="progressContainer">
@@ -232,6 +249,8 @@
   <h2>Please Rotate Your Device</h2>
   <p>For the best viewing experience, please switch to landscape mode</p>
 </div>
+
+<button id="exitFullscreenBtn">✕</button>
 
 <div id="videoContainer">
   <video id="video" autoplay playsinline muted>
@@ -253,13 +272,13 @@
   const container = document.getElementById('videoContainer');
   const instructions = document.getElementById('instructions');
   const loadingOverlay = document.getElementById('loadingOverlay');
-  const loadingPercentage = document.getElementById('loadingPercentage');
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
   const orientationPrompt = document.getElementById('orientationPrompt');
   const playPauseBtn = document.getElementById('playPauseBtn');
   const muteBtn = document.getElementById('muteBtn');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
   const currentTime = document.getElementById('currentTime');
 
   // Check if on mobile device
@@ -297,12 +316,29 @@
       elem.msRequestFullscreen();
     }
     
+    // Show exit button
+    exitFullscreenBtn.style.display = 'block';
+    
     // Hide browser UI on mobile
     if (isMobile) {
       setTimeout(() => {
         window.scrollTo(0, 1);
       }, 100);
     }
+  }
+
+  // Exit fullscreen function
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    
+    // Hide exit button
+    exitFullscreenBtn.style.display = 'none';
   }
 
   // Initialize video
@@ -329,7 +365,6 @@
       if (video.buffered.length > 0 && video.duration > 0) {
         const percent = (video.buffered.end(0) / video.duration) * 100;
         progressBar.style.width = percent + '%';
-        loadingPercentage.textContent = Math.min(100, Math.floor(percent)) + '%';
         
         // Hide loading overlay when enough video is loaded
         if (percent >= 10) {
@@ -410,10 +445,16 @@
   fullscreenBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (document.fullscreenElement) {
-      if (document.exitFullscreen) document.exitFullscreen();
+      exitFullscreen();
     } else {
       enterFullscreen();
     }
+  });
+
+  // Exit fullscreen button
+  exitFullscreenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exitFullscreen();
   });
 
   // Lock landscape on supported devices and show prompt for others
@@ -462,8 +503,10 @@
   document.addEventListener('fullscreenchange', () => {
     if (document.fullscreenElement) {
       fullscreenBtn.textContent = '⛶';
+      exitFullscreenBtn.style.display = 'block';
     } else {
       fullscreenBtn.textContent = '⛶';
+      exitFullscreenBtn.style.display = 'none';
     }
   });
 </script>
