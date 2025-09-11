@@ -20,8 +20,13 @@
   video {
     width: 100vw;
     height: 100vh;
-    object-fit: contain; /* or cover to fill completely */
+    object-fit: contain; /* cover to fill completely */
     background: black;
+  }
+
+  /* Optional: hide controls on mobile until touched */
+  video::-webkit-media-controls {
+    display: none !important;
   }
 </style>
 </head>
@@ -48,20 +53,30 @@
     alert('No video URL provided!');
   }
 
-  // Try to lock orientation to landscape
+  // Try to lock orientation to landscape on supported devices
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(() => {
       console.log('Orientation lock failed');
     });
   }
 
-  // Listen for full-screen requests on touch
-  video.addEventListener('click', () => {
+  // Fullscreen on touch/click
+  const enterFullScreen = () => {
     if (video.requestFullscreen) {
       video.requestFullscreen().catch(()=>{});
     } else if (video.webkitEnterFullscreen) {
       video.webkitEnterFullscreen(); // Safari / iOS
     }
+  };
+
+  // Click anywhere on video or body to enter fullscreen
+  video.addEventListener('click', enterFullScreen);
+  document.body.addEventListener('click', enterFullScreen);
+
+  // Autoplay video when page is loaded (some browsers block if muted is false)
+  window.addEventListener('load', () => {
+    video.muted = true; // Required for autoplay on mobile
+    video.play().catch(() => console.log('Autoplay blocked'));
   });
 </script>
 
