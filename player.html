@@ -3,26 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Fullscreen Video Player</title>
 <style>
-  html, body {
+  * {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html, body {
     width: 100%;
     height: 100%;
-    background: black;
+    background: #000;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  }
+  
+  body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
     position: relative;
-    font-family: Arial, sans-serif;
   }
 
   #videoContainer {
     width: 100vw;
     height: 100vh;
-    display: none; /* hide until video is ready */
+    display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
@@ -32,7 +41,8 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: black;
+    background: #000;
+    cursor: pointer;
   }
 
   #instructions {
@@ -40,53 +50,141 @@
     color: white;
     font-size: 16px;
     z-index: 10;
-    top: 10px;
+    top: 20px;
     text-align: center;
     width: 100%;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: opacity 0.5s ease;
   }
 
-  /* Loading spinner */
+  /* iOS-style loading spinner */
   #loading {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    border: 5px solid rgba(255, 255, 255, 0.3);
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
+    animation: spin 1s linear infinite;
     z-index: 5;
     display: none;
   }
-
+  
   @keyframes spin {
     to { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
-  /* Custom progress bar */
+  /* iOS-style progress bar - Made thicker for mobile */
   #progressContainer {
     position: absolute;
-    bottom: 40px;
-    left: 10px;
-    width: calc(100% - 20px);
-    height: 6px;
-    background: rgba(255, 255, 255, 0.2);
+    bottom: 70px;
+    left: 20px;
+    right: 20px;
+    height: 8px; /* Increased from 4px to 8px for better touch targets */
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
     z-index: 10;
-    display: flex;
-    align-items: center;
-    border-radius: 5px;
+    display: none;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.5s ease;
   }
-
+  
   #progressBar {
     height: 100%;
     width: 0%;
-    background: #ff0000;
-    border-radius: 5px;
+    background: #007AFF;
+    border-radius: 4px;
+    transition: width 0.1s ease;
+    position: relative;
+  }
+
+  /* Progress handle - Made larger for mobile */
+  #progressHandle {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px; /* Increased from 16px to 20px */
+    height: 20px; /* Increased from 16px to 20px */
+    background: #007AFF;
+    border-radius: 50%;
+    display: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+
+  /* iOS-style buffer bar */
+  #bufferBar {
+    position: absolute;
+    height: 100%;
+    width: 0%;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    z-index: -1;
+  }
+
+  /* iOS-style controls */
+  #controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    background: rgba(30, 30, 30, 0.7);
+    padding: 10px 15px;
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  #videoContainer:hover #controls,
+  #controls:hover {
+    opacity: 1;
+  }
+  
+  .control-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin: 0 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s ease;
+  }
+  
+  .control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .control-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+  }
+  
+  #timeDisplay {
+    color: white;
+    font-size: 14px;
+    margin: 0 10px;
+    min-width: 100px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Error message */
@@ -98,30 +196,14 @@
     color: white;
     text-align: center;
     display: none;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    max-width: 80%;
   }
 
-  /* Play/Pause button */
-  #playPauseButton {
-    position: absolute;
-    bottom: 100px;
-    z-index: 20;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    font-size: 24px;
-    border: none;
-    padding: 10px;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  #playPauseButton:focus {
-    outline: none;
-  }
-
-  /* Orientation prompt for mobile */
+  /* iOS-style orientation prompt */
   #orientationPrompt {
     position: fixed;
     top: 0;
@@ -137,31 +219,115 @@
     color: white;
     text-align: center;
     padding: 20px;
+    backdrop-filter: blur(10px);
+  }
+  
+  #orientationIcon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(90deg) scale(1.1); }
+    100% { transform: rotate(90deg) scale(1); }
+  }
+  
+  #orientationPrompt h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  
+  #orientationPrompt p {
+    font-size: 16px;
+    opacity: 0.8;
+    max-width: 300px;
+    line-height: 1.5;
   }
 
-  #orientationPrompt svg {
-    margin-bottom: 20px;
-    width: 60px;
-    height: 60px;
-    fill: white;
+  /* Fullscreen exit button */
+  #exitFullscreen {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 20;
+    background: rgba(30, 30, 30, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    backdrop-filter: blur(10px);
+    transition: opacity 0.3s ease;
+  }
+
+  /* Volume slider */
+  #volumeSliderContainer {
+    position: absolute;
+    left: 20px;
+    bottom: 100px;
+    height: 120px;
+    width: 40px;
+    background: rgba(30, 30, 30, 0.7);
+    border-radius: 20px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    backdrop-filter: blur(10px);
+    z-index: 15;
+  }
+  
+  #volumeSlider {
+    -webkit-appearance: slider-vertical;
+    writing-mode: bt-lr;
+    width: 5px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+    border-radius: 3px;
+  }
+  
+  #volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #007AFF;
+    border-radius: 50%;
+    cursor: pointer;
   }
 </style>
 </head>
 <body>
 
-<div id="instructions">Tap the video to unmute and enter fullscreen</div>
+<div id="instructions">Tap the video to unmute</div>
 <div id="loading"></div>
 <div id="progressContainer">
-  <div id="progressBar"></div>
+  <div id="bufferBar"></div>
+  <div id="progressBar">
+    <div id="progressHandle"></div>
+  </div>
+</div>
+<div id="volumeSliderContainer">
+  <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" orient="vertical">
 </div>
 <div id="error"></div>
+<button id="exitFullscreen">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+  </svg>
+</button>
 
 <div id="orientationPrompt">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-    <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
-    <path d="M14 11h-4v-1h4z"/>
-  </svg>
-  <h2>Please rotate your device</h2>
+  <div id="orientationIcon">🔄</div>
+  <h2>Please Rotate Your Device</h2>
   <p>For the best viewing experience, please switch to landscape mode</p>
 </div>
 
@@ -170,7 +336,28 @@
     <source id="videoSource" src="" type="video/mp4">
     Your browser does not support HTML5 video.
   </video>
-  <button id="playPauseButton">▶️</button>
+  
+  <div id="controls">
+    <button class="control-btn" id="playPause">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M8 5v14l11-7z" id="playIcon" style="display: none;"/>
+        <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" id="pauseIcon"/>
+      </svg>
+    </button>
+    <span id="timeDisplay">0:00 / 0:00</span>
+    <button class="control-btn" id="muteBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" id="volumeUpIcon"/>
+        <path fill="currentColor" d="M3.63 3.63a.996.996 0 0 0 0 1.41L7.29 8.7 7 9H3v6h4l5 5v-6.59l4.18 4.18c-.65.49-1.38.88-2.18 1.11v2.06c1.34-.3 2.57-.92 3.61-1.75l2.05 2.05 1.41-1.41L5.04 3.63a.996.996 0 0 0-1.41 0z" id="volumeMuteIcon" style="display: none;"/>
+        <path fill="currentColor" d="M12 4L9.91 6.09 12 8.18V4z" id="volumeOffIcon" style="display: none;"/>
+      </svg>
+    </button>
+    <button class="control-btn" id="fullscreenBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <script>
@@ -181,81 +368,302 @@
   const loading = document.getElementById('loading');
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
+  const bufferBar = document.getElementById('bufferBar');
+  const progressHandle = document.getElementById('progressHandle');
+  const volumeSliderContainer = document.getElementById('volumeSliderContainer');
+  const volumeSlider = document.getElementById('volumeSlider');
   const errorElement = document.getElementById('error');
   const orientationPrompt = document.getElementById('orientationPrompt');
-  const playPauseButton = document.getElementById('playPauseButton');
+  const playPauseBtn = document.getElementById('playPause');
+  const playIcon = document.getElementById('playIcon');
+  const pauseIcon = document.getElementById('pauseIcon');
+  const muteBtn = document.getElementById('muteBtn');
+  const volumeUpIcon = document.getElementById('volumeUpIcon');
+  const volumeMuteIcon = document.getElementById('volumeMuteIcon');
+  const volumeOffIcon = document.getElementById('volumeOffIcon');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const exitFullscreenBtn = document.getElementById('exitFullscreen');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const controls = document.getElementById('controls');
 
+  // Get video URL from query parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
 
+  // Check if on mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  if(videoUrl){
-    loading.style.display = 'block';
-    source.src = decodeURIComponent(videoUrl);
-    video.load();
-
-    video.addEventListener('loadedmetadata', () => {
-      container.style.display = 'flex';
-      loading.style.display = 'none';
-      
-      if (isMobile) {
-        progressContainer.style.display = 'block';
-      }
-      
-      video.play().catch(e => {
-        console.log('Autoplay blocked:', e);
-        instructions.textContent = 'Tap to play video';
-      });
-    });
-
-    video.addEventListener('progress', () => {
-      if (video.buffered.length > 0) {
-        const percent = (video.buffered.end(0) / video.duration) * 100;
-        progressBar.style.width = percent + '%';
-      }
-    });
-
-    video.addEventListener('error', () => {
-      loading.style.display = 'none';
-      errorElement.style.display = 'block';
-      errorElement.textContent = 'Error loading video. Please check the URL.';
-    });
-
-  } else {
-    errorElement.style.display = 'block';
-    errorElement.textContent = 'No video URL provided!';
+  // Format time function
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   }
 
-  // Play/Pause Button Functionality
-  playPauseButton.addEventListener('click', () => {
-    if (video.paused) {
-      video.play();
-      playPauseButton.textContent = '⏸️';
-    } else {
-      video.pause();
-      playPauseButton.textContent = '▶️';
+  // Update time display
+  function updateTimeDisplay() {
+    if (video.duration) {
+      timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
     }
-  });
+  }
+
+  // Enter fullscreen function
+  function enterFullscreen() {
+    const elem = document.documentElement;
+    
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => {
+        console.log('Fullscreen error:', err);
+      });
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+    
+    // Show exit button
+    exitFullscreenBtn.style.display = 'flex';
+    
+    // Hide browser UI on mobile
+    if (isMobile) {
+      setTimeout(() => {
+        window.scrollTo(0, 1);
+      }, 100);
+    }
+  }
+
+  // Exit fullscreen function
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    
+    // Hide exit button
+    exitFullscreenBtn.style.display = 'none';
+  }
+
+  // Initialize video
+  function initVideo() {
+    if(videoUrl){
+      // Show loading spinner
+      loading.style.display = 'block';
+      
+      source.src = decodeURIComponent(videoUrl);
+      video.load();
+
+      // Show container when video metadata is loaded
+      video.addEventListener('loadedmetadata', () => {
+        container.style.display = 'flex';
+        loading.style.display = 'none';
+        progressContainer.style.display = 'block';
+        
+        updateTimeDisplay();
+        
+        // Try to enter fullscreen immediately
+        setTimeout(() => {
+          enterFullscreen();
+        }, 300);
+        
+        video.play().catch(e => {
+          console.log('Autoplay blocked:', e);
+          instructions.textContent = 'Tap to play video';
+          playIcon.style.display = 'block';
+          pauseIcon.style.display = 'none';
+        });
+      });
+
+      // Handle video loading progress
+      video.addEventListener('progress', () => {
+        if (video.buffered.length > 0 && video.duration > 0) {
+          const percent = (video.buffered.end(0) / video.duration) * 100;
+          bufferBar.style.width = percent + '%';
+        }
+      });
+
+      // Handle time updates
+      video.addEventListener('timeupdate', () => {
+        updateTimeDisplay();
+        
+        // Update progress bar based on current time
+        if (video.duration > 0) {
+          const percent = (video.currentTime / video.duration) * 100;
+          progressBar.style.width = percent + '%';
+        }
+      });
+
+      // Handle video end
+      video.addEventListener('ended', () => {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+      });
+
+      // Handle errors
+      video.addEventListener('error', () => {
+        loading.style.display = 'none';
+        errorElement.style.display = 'block';
+        errorElement.textContent = 'Error loading video. Please check the URL.';
+      });
+
+    } else {
+      errorElement.style.display = 'block';
+      errorElement.textContent = 'No video URL provided!';
+    }
+  }
+
+  // Initialize the video player
+  initVideo();
 
   // Fullscreen and unmute on first tap
   const enableFullscreenAndSound = () => {
     video.muted = false;
+    updateVolumeIcons();
     
-    if (video.requestFullscreen) {
-      video.requestFullscreen();
-    } else if (video.webkitEnterFullscreen) {
-      video.webkitEnterFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-      video.webkitRequestFullscreen();
+    // Try to enter fullscreen again if not already in fullscreen
+    if (!document.fullscreenElement) {
+      enterFullscreen();
     }
     
-    instructions.style.display = 'none';
+    instructions.style.opacity = '0';
+    setTimeout(() => {
+      instructions.style.display = 'none';
+    }, 500);
+    
     video.removeEventListener('click', enableFullscreenAndSound);
   };
 
   video.addEventListener('click', enableFullscreenAndSound);
 
+  // Play/Pause button
+  playPauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (video.paused) {
+      video.play();
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = 'block';
+    } else {
+      video.pause();
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
+    }
+    showControlsTemporarily();
+  });
+
+  // Update volume icons based on volume level
+  function updateVolumeIcons() {
+    if (video.muted || video.volume === 0) {
+      volumeUpIcon.style.display = 'none';
+      volumeMuteIcon.style.display = 'none';
+      volumeOffIcon.style.display = 'block';
+    } else if (video.volume < 0.5) {
+      volumeUpIcon.style.display = 'none';
+      volumeMuteIcon.style.display = 'block';
+      volumeOffIcon.style.display = 'none';
+    } else {
+      volumeUpIcon.style.display = 'block';
+      volumeMuteIcon.style.display = 'none';
+      volumeOffIcon.style.display = 'none';
+    }
+  }
+
+  // Mute button
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    video.muted = !video.muted;
+    updateVolumeIcons();
+    
+    // Show volume slider
+    volumeSliderContainer.style.display = 'flex';
+    setTimeout(() => {
+      volumeSliderContainer.style.display = 'none';
+    }, 3000);
+    showControlsTemporarily();
+  });
+
+  // Volume slider
+  volumeSlider.addEventListener('input', (e) => {
+    video.volume = e.target.value;
+    video.muted = (video.volume === 0);
+    updateVolumeIcons();
+    showControlsTemporarily();
+  });
+
+  // Fullscreen button
+  fullscreenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (document.fullscreenElement) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+    showControlsTemporarily();
+  });
+
+  // Exit fullscreen button
+  exitFullscreenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exitFullscreen();
+    showControlsTemporarily();
+  });
+
+  // Make video seekable by clicking on progress bar
+  progressContainer.addEventListener('click', (e) => {
+    if (video.duration) {
+      const rect = progressContainer.getBoundingClientRect();
+      const clickPosition = (e.clientX - rect.left) / rect.width;
+      video.currentTime = clickPosition * video.duration;
+      
+      // Show loading indicator when seeking
+      loading.style.display = 'block';
+      setTimeout(() => {
+        loading.style.display = 'none';
+      }, 500);
+    }
+    showControlsTemporarily();
+  });
+
+  // Show progress handle on hover
+  progressContainer.addEventListener('mouseenter', () => {
+    progressHandle.style.display = 'block';
+    showControlsTemporarily();
+  });
+  
+  progressContainer.addEventListener('mouseleave', () => {
+    progressHandle.style.display = 'none';
+  });
+
+  // Show controls temporarily and then hide
+  let hideControlsTimeout;
+  let hideProgressTimeout;
+  
+  function showControlsTemporarily() {
+    // Show controls
+    controls.style.opacity = '1';
+    progressContainer.style.opacity = '1';
+    
+    // Clear any existing timeouts
+    clearTimeout(hideControlsTimeout);
+    clearTimeout(hideProgressTimeout);
+    
+    // Set timeout to hide controls after 3 seconds
+    hideControlsTimeout = setTimeout(() => {
+      if (!video.paused) {
+        controls.style.opacity = '0';
+      }
+    }, 3000);
+    
+    // Set timeout to hide progress bar after 5 seconds
+    hideProgressTimeout = setTimeout(() => {
+      if (!video.paused) {
+        progressContainer.style.opacity = '0';
+      }
+    }, 5000);
+  }
+
+  // Lock landscape on supported devices and show prompt for others
   function handleOrientation() {
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(() => {
@@ -269,8 +677,10 @@
     }
   }
 
+  // Try to lock orientation initially
   handleOrientation();
-
+  
+  // Check orientation on resize (device rotation)
   window.addEventListener('resize', () => {
     if (isMobile) {
       if (window.innerHeight > window.innerWidth) {
@@ -281,9 +691,35 @@
     }
   });
 
+  // Hide orientation prompt when clicked
   orientationPrompt.addEventListener('click', () => {
     orientationPrompt.style.display = 'none';
   });
+
+  // Hide browser UI on mobile devices
+  if (isMobile) {
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        window.scrollTo(0, 1);
+      }, 0);
+    });
+  }
+  
+  // Handle fullscreen change events
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+      exitFullscreenBtn.style.display = 'flex';
+    } else {
+      exitFullscreenBtn.style.display = 'none';
+    }
+  });
+
+  // Show controls on mouse movement or touch
+  container.addEventListener('mousemove', showControlsTemporarily);
+  container.addEventListener('touchstart', showControlsTemporarily);
+  
+  // Initially show controls and progress bar
+  setTimeout(showControlsTemporarily, 1000);
 </script>
 
 </body>
