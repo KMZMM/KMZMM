@@ -31,7 +31,7 @@
   #videoContainer {
     width: 100vw;
     height: 100vh;
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
@@ -57,6 +57,7 @@
     backdrop-filter: blur(5px);
     font-weight: 500;
     letter-spacing: 0.5px;
+    transition: opacity 0.5s ease;
   }
 
   /* Loading overlay with percentage */
@@ -110,7 +111,6 @@
     height: 6px;
     background: rgba(255, 255, 255, 0.2);
     z-index: 10;
-    display: none;
   }
   
   #progressBar {
@@ -215,7 +215,7 @@
 </head>
 <body>
 
-<div id="instructions">Tap the video to unmute and enter fullscreen</div>
+<div id="instructions">Tap the video to unmute</div>
 
 <div id="loadingOverlay">
   <div id="loadingSpinner"></div>
@@ -235,7 +235,7 @@
 
 <div id="videoContainer">
   <video id="video" autoplay playsinline muted>
-    <source id="videoSource" src="" type="video/mp4">
+    <source id="videoSource" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
     Your browser does not support HTML5 video.
   </video>
   
@@ -265,9 +265,9 @@
   // Check if on mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // Get video URL from query parameter
+  // Get video URL from query parameter or use default
   const params = new URLSearchParams(window.location.search);
-  const videoUrl = params.get('video');
+  const videoUrl = params.get('video') || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
   // Format time function
   function formatTime(seconds) {
@@ -278,17 +278,40 @@
 
   // Update time display
   function updateTimeDisplay() {
-    currentTime.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+    if (video.duration) {
+      currentTime.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+    }
   }
 
-  if(videoUrl){
+  // Enter fullscreen function
+  function enterFullscreen() {
+    const elem = document.documentElement;
+    
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => {
+        console.log('Fullscreen error:', err);
+      });
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+    
+    // Hide browser UI on mobile
+    if (isMobile) {
+      setTimeout(() => {
+        window.scrollTo(0, 1);
+      }, 100);
+    }
+  }
+
+  // Initialize video
+  function initVideo() {
     source.src = decodeURIComponent(videoUrl);
     video.load();
 
     // Show container when video metadata is loaded
     video.addEventListener('loadedmetadata', () => {
-      container.style.display = 'flex';
-      progressContainer.style.display = 'block';
       updateTimeDisplay();
       
       video.play().catch(e => {
@@ -296,6 +319,9 @@
         instructions.textContent = 'Tap to play video';
         playPauseBtn.textContent = '▶';
       });
+      
+      // Try to enter fullscreen immediately
+      enterFullscreen();
     });
 
     // Handle video loading progress
@@ -336,27 +362,26 @@
       loadingOverlay.style.display = 'none';
       instructions.textContent = 'Error loading video. Please check the URL.';
     });
-
-  } else {
-    loadingOverlay.style.display = 'none';
-    instructions.textContent = 'No video URL provided!';
   }
+
+  // Initialize the video player
+  initVideo();
 
   // Fullscreen and unmute on first tap
   const enableFullscreenAndSound = () => {
     video.muted = false;
     muteBtn.textContent = video.muted ? '🔇' : '🔊';
     
-    // Try to enter fullscreen
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
-    } else if (document.documentElement.webkitRequestFullscreen) {
-      document.documentElement.webkitRequestFullscreen();
-    } else if (document.documentElement.msRequestFullscreen) {
-      document.documentElement.msRequestFullscreen();
+    // Try to enter fullscreen again if not already in fullscreen
+    if (!document.fullscreenElement) {
+      enterFullscreen();
     }
     
-    instructions.style.display = 'none';
+    instructions.style.opacity = '0';
+    setTimeout(() => {
+      instructions.style.display = 'none';
+    }, 500);
+    
     video.removeEventListener('click', enableFullscreenAndSound);
   };
 
@@ -387,7 +412,7 @@
     if (document.fullscreenElement) {
       if (document.exitFullscreen) document.exitFullscreen();
     } else {
-      if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+      enterFullscreen();
     }
   });
 
@@ -431,19 +456,16 @@
         window.scrollTo(0, 1);
       }, 0);
     });
-    
-    // Add to home screen prompt (optional)
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      
-      // You could show a custom "Add to Home Screen" button here
-      setTimeout(() => {
-        // instructions.textContent = 'Tap the share button and select "Add to Home Screen" for a better experience';
-      }, 5000);
-    });
   }
+  
+  // Handle fullscreen change events
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+      fullscreenBtn.textContent = '⛶';
+    } else {
+      fullscreenBtn.textContent = '⛶';
+    }
+  });
 </script>
 
 </body>
