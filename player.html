@@ -22,7 +22,7 @@
   #videoContainer {
     width: 100vw;
     height: 100vh;
-    display: none; /* Hide until video is ready */
+    display: none; /* hide until video is ready */
     justify-content: center;
     align-items: center;
     position: relative;
@@ -33,7 +33,6 @@
     height: 100%;
     object-fit: contain;
     background: black;
-    pointer-events: none;
   }
 
   #instructions {
@@ -72,20 +71,22 @@
   /* Custom progress bar */
   #progressContainer {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
+    bottom: 40px;
+    left: 10px;
+    width: calc(100% - 20px);
+    height: 6px;
     background: rgba(255, 255, 255, 0.2);
     z-index: 10;
-    display: none;
+    display: flex;
+    align-items: center;
+    border-radius: 5px;
   }
 
   #progressBar {
     height: 100%;
     width: 0%;
     background: #ff0000;
-    transition: width 0.2s ease;
+    border-radius: 5px;
   }
 
   /* Error message */
@@ -100,6 +101,24 @@
     background: rgba(0, 0, 0, 0.7);
     padding: 20px;
     border-radius: 10px;
+  }
+
+  /* Play/Pause button */
+  #playPauseButton {
+    position: absolute;
+    bottom: 100px;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 24px;
+    border: none;
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #playPauseButton:focus {
+    outline: none;
   }
 
   /* Orientation prompt for mobile */
@@ -126,31 +145,15 @@
     height: 60px;
     fill: white;
   }
-
-  /* Button styling for minimize and fullscreen toggle */
-  #fullscreenBtn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 15;
-  }
-
-  #fullscreenBtn:hover {
-    background: rgba(0, 0, 0, 0.7);
-  }
 </style>
 </head>
 <body>
 
 <div id="instructions">Tap the video to unmute and enter fullscreen</div>
 <div id="loading"></div>
-<div id="progressContainer"><div id="progressBar"></div></div>
+<div id="progressContainer">
+  <div id="progressBar"></div>
+</div>
 <div id="error"></div>
 
 <div id="orientationPrompt">
@@ -167,7 +170,7 @@
     <source id="videoSource" src="" type="video/mp4">
     Your browser does not support HTML5 video.
   </video>
-  <button id="fullscreenBtn">Fullscreen</button>
+  <button id="playPauseButton">▶️</button>
 </div>
 
 <script>
@@ -180,28 +183,22 @@
   const progressBar = document.getElementById('progressBar');
   const errorElement = document.getElementById('error');
   const orientationPrompt = document.getElementById('orientationPrompt');
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const playPauseButton = document.getElementById('playPauseButton');
 
-  // Get video URL from query parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
 
-  // Check if on mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   if(videoUrl){
-    // Show loading spinner
     loading.style.display = 'block';
-    
     source.src = decodeURIComponent(videoUrl);
     video.load();
 
-    // Show container when video metadata is loaded
     video.addEventListener('loadedmetadata', () => {
       container.style.display = 'flex';
       loading.style.display = 'none';
       
-      // Show progress container for mobile
       if (isMobile) {
         progressContainer.style.display = 'block';
       }
@@ -212,7 +209,6 @@
       });
     });
 
-    // Handle video loading progress
     video.addEventListener('progress', () => {
       if (video.buffered.length > 0) {
         const percent = (video.buffered.end(0) / video.duration) * 100;
@@ -220,7 +216,6 @@
       }
     });
 
-    // Handle errors
     video.addEventListener('error', () => {
       loading.style.display = 'none';
       errorElement.style.display = 'block';
@@ -232,17 +227,27 @@
     errorElement.textContent = 'No video URL provided!';
   }
 
+  // Play/Pause Button Functionality
+  playPauseButton.addEventListener('click', () => {
+    if (video.paused) {
+      video.play();
+      playPauseButton.textContent = '⏸️';
+    } else {
+      video.pause();
+      playPauseButton.textContent = '▶️';
+    }
+  });
+
   // Fullscreen and unmute on first tap
   const enableFullscreenAndSound = () => {
     video.muted = false;
     
-    // Try to enter fullscreen
     if (video.requestFullscreen) {
       video.requestFullscreen();
     } else if (video.webkitEnterFullscreen) {
-      video.webkitEnterFullscreen(); // iOS
+      video.webkitEnterFullscreen();
     } else if (video.webkitRequestFullscreen) {
-      video.webkitRequestFullscreen(); // Other WebKit
+      video.webkitRequestFullscreen();
     }
     
     instructions.style.display = 'none';
@@ -251,16 +256,6 @@
 
   video.addEventListener('click', enableFullscreenAndSound);
 
-  // Fullscreen toggle on button click
-  fullscreenBtn.addEventListener('click', () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      video.requestFullscreen();
-    }
-  });
-
-  // Lock landscape on supported devices and show prompt for others
   function handleOrientation() {
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(() => {
@@ -274,10 +269,8 @@
     }
   }
 
-  // Try to lock orientation initially
   handleOrientation();
-  
-  // Check orientation on resize (device rotation)
+
   window.addEventListener('resize', () => {
     if (isMobile) {
       if (window.innerHeight > window.innerWidth) {
@@ -288,7 +281,6 @@
     }
   });
 
-  // Hide orientation prompt when clicked
   orientationPrompt.addEventListener('click', () => {
     orientationPrompt.style.display = 'none';
   });
