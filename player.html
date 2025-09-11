@@ -29,7 +29,7 @@
     }
     #instructions {
       position: absolute;
-      left: 50%; bottom: 85px;
+      left: 50%; bottom: 90px;
       transform: translateX(-50%);
       color: #fff;
       font-size: 15px;
@@ -47,26 +47,30 @@
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%,-50%);
-      width: 40px; height: 40px;
+      width: 48px; height: 48px;
       border-radius: 50%;
       border: 3.5px solid rgba(255,255,255,0.18);
       border-left: 3.5px solid #fff;
       animation: spin 0.7s linear infinite;
       z-index: 12;
-      display: none;
       background: transparent;
+      display: block;
+      pointer-events: none;
     }
     @keyframes spin { to { transform:translate(-50%,-50%) rotate(360deg);} }
-
-    /* Controls bar */
     #controlsBar {
       position: absolute; bottom: 0; left: 0; width: 100vw;
       display: flex; align-items: center; justify-content: center; gap: 15px;
       z-index: 21;
-      padding: 15px 7vw 21px 7vw;
+      padding: 13px 7vw 19px 7vw;
       box-sizing: border-box;
-      background: linear-gradient(to top,rgba(0,0,0,0.8) 85%,transparent);
-      opacity: 1; transition: opacity 0.45s;
+      background: linear-gradient(to top,rgba(0,0,0,0.80) 75%,transparent);
+      opacity: 1; transition: opacity 0.4s;
+      pointer-events: auto;
+    }
+    #controlsBar.hide {
+      opacity: 0;
+      pointer-events: none;
     }
     .iconBtn {
       background: rgba(30,30,30,0.7);
@@ -75,7 +79,7 @@
       padding: 7px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.15s, opacity 0.15s;
       box-shadow: 0 1px 8px 0 #0002;
     }
     .iconBtn svg { width: 22px; height: 22px; fill: #fff; }
@@ -83,9 +87,7 @@
     .iconBtn[disabled] { opacity: 0.45; pointer-events: none; }
     #fullscreenBtn { display:flex;}
     #minimizeBtn { display:none;}
-    #muteBtn { margin-right: 8px; }
-
-    /* Progress bar */
+    #muteBtn, #playPauseBtn { margin-right: 5px; }
     #progressWrapper {
       display: flex; align-items: center;
       gap: 10px; flex:1;
@@ -93,9 +95,9 @@
     }
     .progress-bar-bg {
       position: relative;
-      width: 60vw; max-width: 520px; height: 8px;
+      width: 60vw; max-width: 520px; height: 4px;
       background: #181818;
-      border-radius: 5px;
+      border-radius: 2px;
       overflow: visible;
       flex: 1 1 auto;
       min-width:70px;
@@ -105,17 +107,17 @@
     #progressBar {
       height: 100%;
       background: linear-gradient(90deg, #ff4850 0%, #ffab34 100%);
-      border-radius: 5px;
+      border-radius: 2px;
       transition: width 0.08s;
       width: 0%;
       pointer-events: none;
     }
     #progressThumb {
       position: absolute; top: 50%; left: 0;
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       background: #fff;
       border-radius: 50%;
-      border: 2.5px solid #ff4850;
+      border: 2px solid #ff4850;
       transform: translate(-50%,-50%) scale(1);
       box-shadow: 0 1px 5px 0 rgba(255,60,60,0.17);
       transition: box-shadow 0.14s, border 0.16s, background 0.18s,transform 0.13s;
@@ -123,13 +125,13 @@
       opacity: 1;
     }
     #progressWrapper.dragging #progressThumb {
-      transform: translate(-50%,-50%) scale(1.15);
-      box-shadow: 0 2px 12px 0 #ff485058;
+      transform: translate(-50%,-50%) scale(1.17);
+      box-shadow: 0 2px 13px 0 #ff485058;
       background: #ffeaea;
     }
     #progressTime {
-      color: #fff; font-size: 14px;
-      min-width: 85px;
+      color: #fff; font-size: 13px;
+      min-width: 65px;
       user-select: none;
       text-align:right;
       text-shadow: 0 1px 3px #000;
@@ -171,6 +173,10 @@
       <svg id="muteOn" viewBox="0 0 24 24"><path d="M16.5 12c0-2.485-2.015-4.5-4.5-4.5S7.5 9.515 7.5 12s2.015 4.5 4.5 4.5 4.5-2.015 4.5-4.5zm-4.5-3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
       <svg id="muteOff" style="display:none;" viewBox="0 0 24 24"><path d="M16.5 12c0-2.485-2.015-4.5-4.5-4.5S7.5 9.515 7.5 12s2.015 4.5 4.5 4.5 4.5-2.015 4.5-4.5zm-4.5-3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><line x1="8" y1="8" x2="16" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
+    <button class="iconBtn" id="playPauseBtn" title="Play/Pause">
+      <svg id="playIcon" viewBox="0 0 24 24"><polygon points="7,5 21,12 7,19" /></svg>
+      <svg id="pauseIcon" style="display:none;" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="2"/><rect x="14" y="5" width="4" height="14" rx="2"/></svg>
+    </button>
     <button class="iconBtn" id="fullscreenBtn" title="Enter Fullscreen">
       <svg viewBox="0 0 24 24"><path d="M9 7H5v4h2V9h2V7zm10 0h-4v2h2v2h2V7zm0 10v-4h-2v2h-2v2h4zm-10 0v-2H7v-2H5v4h4z"/></svg>
     </button>
@@ -200,6 +206,9 @@
   const muteBtn = document.getElementById('muteBtn');
   const muteOn = document.getElementById('muteOn');
   const muteOff = document.getElementById('muteOff');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const playIcon = document.getElementById('playIcon');
+  const pauseIcon = document.getElementById('pauseIcon');
   const controlsBar = document.getElementById('controlsBar');
   const progressBar = document.getElementById('progressBar');
   const progressBarBg = document.getElementById('progressBarBg');
@@ -211,7 +220,7 @@
   const videoUrl = params.get('video');
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  let isFullscreen = false, userInteracted = false, dragging = false, wasPlaying = false, seekTimeout = null;
+  let isFullscreen = false, userInteracted = false, dragging = false, wasPlaying = false, hideTimeout = null;
   // Utility
   function formatTime(t) {
     if (!isFinite(t)) return '00:00';
@@ -251,7 +260,7 @@
   function handleSeekEnd() {
     if (!dragging) return;
     dragging = false;
-    setTimeout(() => setLoadingSpinner(false), 200); // let buffer show
+    setTimeout(() => setLoadingSpinner(false), 200);
     progressWrapper.classList.remove('dragging');
     if (wasPlaying) video.play();
   }
@@ -264,19 +273,42 @@
 
   progressBarBg.addEventListener('click', seek);
 
-  // Control visibility
-  let controlTimeout;
-  function showControls() {
-    controlsBar.style.opacity = 1;
+  // Controls auto-hide logic
+  function showControls(keep = false) {
+    controlsBar.classList.remove('hide');
     instructions.style.opacity = 1;
-    clearTimeout(controlTimeout);
-    controlTimeout = setTimeout(() => {
-      controlsBar.style.opacity = 0.93;
-      instructions.style.opacity = 0;
-    }, 2200);
+    clearTimeout(hideTimeout);
+    if (!keep) {
+      hideTimeout = setTimeout(() => {
+        controlsBar.classList.add('hide');
+        instructions.style.opacity = 0;
+      }, 2500);
+    }
   }
-  document.addEventListener('mousemove', showControls);
-  video.addEventListener('touchstart', showControls);
+  function userInteraction() {
+    showControls();
+  }
+  ['mousemove','touchstart','keydown'].forEach(ev =>
+    document.addEventListener(ev, userInteraction)
+  );
+
+  // Play/Pause logic
+  function updatePlayPauseBtn() {
+    if (video.paused) {
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
+    } else {
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = 'block';
+    }
+  }
+  function togglePlayPause() {
+    if (video.paused) video.play();
+    else video.pause();
+  }
+  playPauseBtn.onclick = togglePlayPause;
+  video.addEventListener('play', updatePlayPauseBtn);
+  video.addEventListener('pause', updatePlayPauseBtn);
 
   // Fullscreen/minimize logic
   function enterFullscreen() {
@@ -287,7 +319,7 @@
     isFullscreen = true;
     fullscreenBtn.style.display = 'none';
     minimizeBtn.style.display = 'flex';
-    showControls();
+    showControls(true);
   }
   function exitFullscreen() {
     if (!isFullscreen) return;
@@ -302,7 +334,7 @@
     isFullscreen = !!document.fullscreenElement;
     fullscreenBtn.style.display = isFullscreen ? 'none' : 'flex';
     minimizeBtn.style.display = isFullscreen ? 'flex' : 'none';
-    showControls();
+    showControls(true);
   });
   fullscreenBtn.onclick = enterFullscreen;
   minimizeBtn.onclick = exitFullscreen;
@@ -347,7 +379,7 @@
       container.style.visibility = 'visible';
       setLoadingSpinner(false);
       updateProgress();
-      showControls();
+      showControls(true);
       video.play().then(() => {
         enterFullscreen();
       }).catch(() => {
