@@ -1,107 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Fullscreen Video Player</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enhanced Fullscreen Video Player</title>
 <style>
   html, body {
-    margin: 0; padding: 0;
-    width: 100%; height: 100%;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
     background: black;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
     position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
+
   #videoContainer {
     width: 100vw;
     height: 100vh;
-    display: none; /* show once ready */
+    display: none; /* hide until video is ready */
     justify-content: center;
     align-items: center;
     position: relative;
-    background: black;
   }
+
   video {
     width: 100%;
     height: 100%;
     object-fit: contain;
     background: black;
-    -webkit-tap-highlight-color: transparent; /* iOS */
   }
+
   #instructions {
     position: absolute;
     color: white;
     font-size: 16px;
-    z-index: 20;
+    z-index: 10;
     top: 10px;
-    width: 100%;
     text-align: center;
+    width: 100%;
     padding: 10px;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    user-select: none;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease;
   }
-  /* iOS style progress bar container */
-  #progressContainer {
-    position: absolute;
-    bottom: 10px;
-    left: 15px;
-    right: 15px;
-    height: 6px;
-    background: rgba(white, 0.15);
-    border-radius: 3px;
-    box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
-    display: none;
-    z-index: 15;
-  }
-  #progressBar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #0a84ff, #5ac8fa);
-    border-radius: 3px;
-    transition: width 0.25s ease;
-  }
+
   /* Loading spinner */
   #loading {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: 50px; height: 50px;
+    width: 50px;
+    height: 50px;
     border: 5px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    border-top-color: #0a84ff;
+    border-top-color: #fff;
     animation: spin 1s ease-in-out infinite;
-    z-index: 30;
+    z-index: 5;
     display: none;
   }
+
   @keyframes spin {
     to { transform: translate(-50%, -50%) rotate(360deg); }
   }
+
+  /* Custom progress bar */
+  #progressContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: 10;
+    display: none;
+    cursor: pointer;
+  }
+
+  #progressBar {
+    height: 100%;
+    width: 0%;
+    background: #ff375f;
+    transition: width 0.1s ease;
+    position: relative;
+  }
+
+  #progressBar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff375f;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Controls container */
+  #controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 30px;
+    padding: 8px 15px;
+    backdrop-filter: blur(4px);
+    z-index: 11;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  #videoContainer:hover #controls,
+  #controls.visible {
+    opacity: 1;
+  }
+
+  .control-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin: 0 10px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .control-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+  }
+
+  /* Time display */
+  #timeDisplay {
+    color: white;
+    font-size: 14px;
+    margin: 0 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Error message */
   #error {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     color: white;
     text-align: center;
     display: none;
     background: rgba(0, 0, 0, 0.7);
     padding: 20px;
-    border-radius: 12px;
-    user-select:none;
-    z-index: 40;
+    border-radius: 10px;
+    max-width: 80%;
   }
+
   /* Orientation prompt for mobile */
   #orientationPrompt {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.95);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
     z-index: 100;
     display: none;
     justify-content: center;
@@ -110,68 +190,70 @@
     color: white;
     text-align: center;
     padding: 20px;
-    user-select:none;
   }
+
   #orientationPrompt svg {
     margin-bottom: 20px;
-    width: 70px;
-    height: 70px;
-    fill: white;
-  }
-  /* iOS-style rotate device icon */
-  #orientationPrompt svg path {
-    stroke: white;
-    stroke-width: 1.2;
-  }
-  /* Fullscreen toggle button (top-right) */
-  #fullscreenToggle {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    width: 34px;
-    height: 34px;
-    background: rgba(10, 132, 255, 0.85);
-    border-radius: 17px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 50;
-    -webkit-tap-highlight-color: transparent;
-  }
-  #fullscreenToggle svg {
-    width: 20px;
-    height: 20px;
+    width: 60px;
+    height: 60px;
     fill: white;
   }
 </style>
 </head>
 <body>
-  <div id="instructions">Tap the video to unmute and enter fullscreen</div>
-  <div id="loading"></div>
-  <div id="progressContainer"><div id="progressBar"></div></div>
-  <div id="error"></div>
-  <div id="orientationPrompt">
-    <!-- Updated iOS style rotate icon -->
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" >
-      <path d="M17.7 5.3a8 8 0 1 0 0 11.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="21 3 21 9 15 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    </svg>
-    <h2>Please rotate your device</h2>
-    <p>For the best viewing experience, please switch to landscape mode</p>
+
+<div id="instructions">Tap the video to unmute and enter fullscreen</div>
+<div id="loading"></div>
+<div id="progressContainer"><div id="progressBar"></div></div>
+<div id="error"></div>
+
+<div id="orientationPrompt">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
+    <path d="M14 11h-4v-1h4z"/>
+  </svg>
+  <h2>Please rotate your device</h2>
+  <p>For the best viewing experience, please switch to landscape mode</p>
+</div>
+
+<div id="videoContainer">
+  <video id="video" autoplay playsinline muted>
+    <source id="videoSource" src="" type="video/mp4">
+    Your browser does not support HTML5 video.
+  </video>
+  
+  <div id="controls">
+    <button id="playPauseBtn" class="control-btn">
+      <svg class="icon" viewBox="0 0 24 24" id="playIcon">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg class="icon" viewBox="0 0 24 24" id="pauseIcon" style="display: none;">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
+    </button>
+    
+    <span id="timeDisplay">0:00 / 0:00</span>
+    
+    <button id="muteBtn" class="control-btn">
+      <svg class="icon" viewBox="0 0 24 24" id="volumeOnIcon">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+      <svg class="icon" viewBox="0 0 24 24" id="volumeOffIcon" style="display: none;">
+        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+      </svg>
+    </button>
+    
+    <button id="fullscreenBtn" class="control-btn">
+      <svg class="icon" viewBox="0 0 24 24" id="enterFullscreenIcon">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+      <svg class="icon" viewBox="0 0 24 24" id="exitFullscreenIcon" style="display: none;">
+        <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+      </svg>
+    </button>
   </div>
-  <div id="videoContainer">
-    <video id="video" autoplay playsinline muted>
-      <source id="videoSource" src="" type="video/mp4" />
-      Your browser does not support HTML5 video.
-    </video>
-  </div>
-  <div id="fullscreenToggle" title="Exit Fullscreen (Tap to toggle)">
-    <!-- iOS style minimize fullscreen icon -->
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
-      <path d="M4 4h6M4 4v6M20 20h-6M20 20v-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    </svg>
-  </div>
+</div>
+
 <script>
   const video = document.getElementById('video');
   const source = document.getElementById('videoSource');
@@ -182,147 +264,209 @@
   const progressBar = document.getElementById('progressBar');
   const errorElement = document.getElementById('error');
   const orientationPrompt = document.getElementById('orientationPrompt');
-  const fullscreenToggle = document.getElementById('fullscreenToggle');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const playIcon = document.getElementById('playIcon');
+  const pauseIcon = document.getElementById('pauseIcon');
+  const volumeOnIcon = document.getElementById('volumeOnIcon');
+  const volumeOffIcon = document.getElementById('volumeOffIcon');
+  const enterFullscreenIcon = document.getElementById('enterFullscreenIcon');
+  const exitFullscreenIcon = document.getElementById('exitFullscreenIcon');
+  const controls = document.getElementById('controls');
 
+  // Get video URL from query parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
 
+  // Check if on mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // Show loading spinner and set video source if url provided
+  // State variables
+  let isSeeking = false;
+  let controlsTimeout;
+
+  // Format time function
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
+
+  // Update time display
+  function updateTimeDisplay() {
+    timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+  }
+
+  // Update progress bar
+  function updateProgress() {
+    if (!isSeeking && video.duration) {
+      const percent = (video.currentTime / video.duration) * 100;
+      progressBar.style.width = percent + '%';
+    }
+    updateTimeDisplay();
+  }
+
+  // Show controls with timeout
+  function showControls() {
+    controls.classList.add('visible');
+    clearTimeout(controlsTimeout);
+    controlsTimeout = setTimeout(() => {
+      if (!isSeeking) {
+        controls.classList.remove('visible');
+      }
+    }, 3000);
+  }
+
   if(videoUrl){
+    // Show loading spinner
     loading.style.display = 'block';
+    
     source.src = decodeURIComponent(videoUrl);
     video.load();
 
+    // Show container when video metadata is loaded
     video.addEventListener('loadedmetadata', () => {
       container.style.display = 'flex';
       loading.style.display = 'none';
-
-      if(isMobile) progressContainer.style.display = 'block';
-
+      
+      // Show progress container
+      progressContainer.style.display = 'block';
+      
+      // Update time display with duration
+      updateTimeDisplay();
+      
+      // Try to play video
       video.play().catch(e => {
+        console.log('Autoplay blocked:', e);
         instructions.textContent = 'Tap to play video';
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
       });
-
-      // Try initial fullscreen in portrait to hide browser chrome if possible
-      if(screen.orientation && screen.orientation.lock){
-        screen.orientation.lock('portrait').catch(() => {
-          // fallback, ignore error
-        });
-      }
     });
 
+    // Handle video loading progress
     video.addEventListener('progress', () => {
       if (video.buffered.length > 0) {
         const percent = (video.buffered.end(0) / video.duration) * 100;
-        progressBar.style.width = percent + '%';
+        // We're just showing playback progress instead of buffering
       }
     });
 
+    // Update progress as video plays
+    video.addEventListener('timeupdate', updateProgress);
+
+    // Handle errors
     video.addEventListener('error', () => {
       loading.style.display = 'none';
       errorElement.style.display = 'block';
       errorElement.textContent = 'Error loading video. Please check the URL.';
     });
+
   } else {
     errorElement.style.display = 'block';
     errorElement.textContent = 'No video URL provided!';
   }
 
-  // Fullscreen & Unmute on first tap
-  // Also adjust instructions visibility and show fullscreen toggle after fullscreen enters
-  const enableFullscreenAndSound = async () => {
-    video.muted = false;
-    try {
-      if(video.requestFullscreen){
-        await video.requestFullscreen();
-      }
-      else if(video.webkitEnterFullscreen){ // iOS
-        video.webkitEnterFullscreen();
-      }
-      else if(video.webkitRequestFullscreen){
-        await video.webkitRequestFullscreen();
-      }
+  // Play/Pause functionality
+  playPauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (video.paused) {
+      video.play();
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = 'block';
+    } else {
+      video.pause();
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
     }
-    catch(e){
-      console.log('Fullscreen request failed:', e);
-    }
-    instructions.style.display = 'none';
-    fullscreenToggle.style.display = 'flex';
-    video.removeEventListener('click', enableFullscreenAndSound);
-  };
-  video.addEventListener('click', enableFullscreenAndSound);
+    showControls();
+  });
 
-  // Fullscreen toggle button click handler - toggle fullscreen exit/enter
-  fullscreenToggle.addEventListener('click', async () => {
-    if(document.fullscreenElement || document.webkitFullscreenElement){
+  // Mute/Unmute functionality
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    video.muted = !video.muted;
+    if (video.muted) {
+      volumeOnIcon.style.display = 'none';
+      volumeOffIcon.style.display = 'block';
+    } else {
+      volumeOnIcon.style.display = 'block';
+      volumeOffIcon.style.display = 'none';
+    }
+    showControls();
+  });
+
+  // Fullscreen functionality
+  fullscreenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFullscreen();
+  });
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
       // Exit fullscreen
-      if(document.exitFullscreen){
-        await document.exitFullscreen();
-      } else if(document.webkitExitFullscreen){
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
       }
+      enterFullscreenIcon.style.display = 'block';
+      exitFullscreenIcon.style.display = 'none';
     } else {
       // Enter fullscreen
-      try {
-        if(video.requestFullscreen){
-          await video.requestFullscreen();
-        } else if(video.webkitEnterFullscreen){
-          video.webkitEnterFullscreen();
-        }
-      } catch(e) {
-        console.log('Fullscreen toggle failed:', e);
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
       }
+      enterFullscreenIcon.style.display = 'none';
+      exitFullscreenIcon.style.display = 'block';
     }
-  });
+    showControls();
+  }
 
-  // Listen for fullscreen change events to toggle visibility and instructions appropriately
-  document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement === video) {
-      fullscreenToggle.style.display = 'flex';
-      instructions.style.display = 'none';
-    } else {
-      fullscreenToggle.style.display = 'none';
-      instructions.style.display = 'block';
-    }
-  });
-  document.addEventListener('webkitfullscreenchange', () => {
-    if(document.webkitFullscreenElement === video){
-      fullscreenToggle.style.display = 'flex';
-      instructions.style.display = 'none';
-    } else {
-      fullscreenToggle.style.display = 'none';
-      instructions.style.display = 'block';
-    }
-  });
+  // Update fullscreen button when fullscreen changes
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 
-  // Orientation handling and prompt for mobile
-  function handleOrientation() {
-    if(screen.orientation && screen.orientation.lock){
-      screen.orientation.lock('landscape').catch(() => {
-        if(isMobile && window.innerHeight > window.innerWidth){
-          orientationPrompt.style.display = 'flex';
-        }
-      });
-    } else if(isMobile && window.innerHeight > window.innerWidth){
-      orientationPrompt.style.display = 'flex';
+  function updateFullscreenButton() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      enterFullscreenIcon.style.display = 'none';
+      exitFullscreenIcon.style.display = 'block';
+    } else {
+      enterFullscreenIcon.style.display = 'block';
+      exitFullscreenIcon.style.display = 'none';
     }
   }
-  handleOrientation();
 
-  window.addEventListener('resize', () => {
-    if(isMobile){
-      if(window.innerHeight > window.innerWidth){
-        orientationPrompt.style.display = 'flex';
-      } else {
-        orientationPrompt.style.display = 'none';
-      }
+  // Fullscreen and unmute on first tap
+  const enableFullscreenAndSound = () => {
+    video.muted = false;
+    volumeOnIcon.style.display = 'block';
+    volumeOffIcon.style.display = 'none';
+    
+    // Try to enter fullscreen
+    if (container.requestFullscreen) {
+      container.requestFullscreen().catch(err => {
+        console.log('Fullscreen error:', err);
+      });
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen();
     }
-  });
-  orientationPrompt.addEventListener('click', () => {
-    orientationPrompt.style.display = 'none';
-  });
-</script>
-</body>
-</html>
+    
+    instructions.style.display = 'none';
+    video.removeEventListener('click', enableFullscreenAndSound);
+    
+    // Add click handler for showing controls
+    video.addEventListener('click', () => {
+      showControls();
+    });
+  };
+
+  video.addEventListener('click', enableFullscreenAndSound);
