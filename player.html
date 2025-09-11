@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fullscreen Video Player</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain; /* or cover to fill completely */
+    background: black;
+  }
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline controls muted>
+  <source id="videoSource" src="" type="video/mp4">
+  Your browser does not support HTML5 video.
+</video>
+
+<script>
+  const video = document.getElementById('video');
+  const source = document.getElementById('videoSource');
+
+  // Get video URL from query parameter
+  const params = new URLSearchParams(window.location.search);
+  const videoUrl = params.get('video');
+
+  if(videoUrl){
+    source.src = decodeURIComponent(videoUrl);
+    video.load();
+    video.play().catch(() => console.log('Autoplay blocked'));
+  } else {
+    alert('No video URL provided!');
+  }
+
+  // Try to lock orientation to landscape
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {
+      console.log('Orientation lock failed');
+    });
+  }
+
+  // Listen for full-screen requests on touch
+  video.addEventListener('click', () => {
+    if (video.requestFullscreen) {
+      video.requestFullscreen().catch(()=>{});
+    } else if (video.webkitEnterFullscreen) {
+      video.webkitEnterFullscreen(); // Safari / iOS
+    }
+  });
+</script>
+
+</body>
+</html>
