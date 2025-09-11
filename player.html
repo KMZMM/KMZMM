@@ -11,41 +11,51 @@
     width: 100%;
     height: 100%;
     background: black;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
   }
 
   #videoContainer {
     width: 100vw;
     height: 100vh;
-    display: none; /* hide until video is ready */
+    display: flex;
     justify-content: center;
     align-items: center;
+    background: black;
   }
 
   video {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: black;
+  }
+
+  /* Simulate landscape if in portrait */
+  @media (orientation: portrait) {
+    #videoContainer {
+      transform: rotate(90deg);
+      transform-origin: center center;
+      width: 100vh;
+      height: 100vw;
+    }
   }
 
   #instructions {
     position: absolute;
-    color: white;
-    font-size: 16px;
-    z-index: 10;
     top: 10px;
-    text-align: center;
     width: 100%;
+    text-align: center;
+    color: white;
+    z-index: 10;
+    font-size: 16px;
   }
 </style>
 </head>
 <body>
 
-<div id="instructions">Tap the video to unmute and enter fullscreen</div>
+<div id="instructions">Tap video to unmute & fullscreen</div>
 
 <div id="videoContainer">
   <video id="video" autoplay playsinline muted controls>
@@ -57,40 +67,32 @@
 <script>
   const video = document.getElementById('video');
   const source = document.getElementById('videoSource');
-  const container = document.getElementById('videoContainer');
   const instructions = document.getElementById('instructions');
 
-  // Get video URL from query parameter
+  // Load video from URL parameter
   const params = new URLSearchParams(window.location.search);
   const videoUrl = params.get('video');
-
   if(videoUrl){
     source.src = decodeURIComponent(videoUrl);
     video.load();
-
-    // Show container when video metadata is loaded
-    video.addEventListener('loadedmetadata', () => {
-      container.style.display = 'flex';
-      video.play().catch(() => console.log('Autoplay blocked'));
-    });
+    video.play().catch(() => console.log('Autoplay blocked'));
   } else {
     alert('No video URL provided!');
   }
 
-  // Fullscreen and unmute on first tap
+  // Fullscreen & unmute on first tap
   const enableFullscreenAndSound = () => {
     video.muted = false;
-    if (video.requestFullscreen) video.requestFullscreen();
-    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iOS
+    if(video.requestFullscreen) video.requestFullscreen();
+    else if(video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iOS
     instructions.style.display = 'none';
     video.removeEventListener('click', enableFullscreenAndSound);
   };
-
   video.addEventListener('click', enableFullscreenAndSound);
 
-  // Lock landscape on supported devices
-  if (screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('landscape').catch(() => console.log('Orientation lock failed'));
+  // Try orientation lock where supported
+  if(screen.orientation && screen.orientation.lock){
+    screen.orientation.lock('landscape').catch(()=>console.log('Orientation lock failed'));
   }
 </script>
 
