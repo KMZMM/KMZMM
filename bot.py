@@ -81,7 +81,12 @@ def handle_message(message):
         for src in sources:
             if src["url"]:
                 # Direct video play link (works in browser, VLC, etc.)
-                markup.add(InlineKeyboardButton(f"Watch: {src['name']}", url=src["url"]))
+markup.add(
+    InlineKeyboardButton(
+        f"Watch: {src['name']}",
+        url=f"https://kmzmm.github.io/KMZMM/player.html?video={src['url']}"
+    )
+)
 
         caption = f"<b>{name}</b>\n\n{description[:500]}"  # First 500 characters of description
 
