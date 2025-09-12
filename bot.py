@@ -75,18 +75,18 @@ def handle_message(message):
         sources = fetch_movie_sources(movie_id)
 
         if not sources:
-            sources = [{"name": "Watch", "url": None}]
+    sources = [{"name": "Watch", "url": None}]
 
-        markup = InlineKeyboardMarkup()
-        for src in sources:
-            if src["url"]:
-                # Direct video play link (works in browser, VLC, etc.)
-markup.add(
-    InlineKeyboardButton(
-        f"Watch: {src['name']}",
-        url=f"https://kmzmm.github.io/KMZMM/player.html?video={src['url']}"
-    )
-)
+markup = InlineKeyboardMarkup()
+for src in sources:
+    if src["url"]:
+        # Direct video play link (works in browser, VLC, etc.)
+        markup.add(
+            InlineKeyboardButton(
+                f"Watch: {src['name']}",
+                url=f"https://kmzmm.github.io/KMZMM/player.html?video={src['url']}"
+            )
+        )
 
         caption = f"<b>{name}</b>\n\n{description[:500]}"  # First 500 characters of description
 
