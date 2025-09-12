@@ -75,30 +75,47 @@ def handle_message(message):
         sources = fetch_movie_sources(movie_id)
 
         if not sources:
-    sources = [{"name": "Watch", "url": None}]
+            sources = [{"name": "Watch", "url": None}]
 
-markup = InlineKeyboardMarkup()
-for src in sources:
-    if src["url"]:
-        # Direct video play link (works in browser, VLC, etc.)
-        markup.add(
-            InlineKeyboardButton(
-                f"Watch: {src['name']}",
-                url=f"https://kmzmm.github.io/KMZMM/player.html?video={src['url']}"
-            )
-        )
+        markup = InlineKeyboardMarkup()
+        for src in sources:
+            if src["url"]:
+                # Direct video play link (works in browser, VLC, etc.)
+                markup.add(
+                    InlineKeyboardButton(
+                        f"Watch: {src['name']}",
+                        url=f"https://kmzmm.github.io/KMZMM/player.html?video={src['url']}"
+                    )
+                )
 
         caption = f"<b>{name}</b>\n\n{description[:500]}"  # First 500 characters of description
 
         try:
             # Send poster + description + watch button
             if poster:
-                bot.send_photo(chat_id=message.chat.id, photo=poster, caption=caption, parse_mode="HTML", reply_markup=markup)
+                bot.send_photo(
+                    chat_id=message.chat.id,
+                    photo=poster,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=markup
+                )
             else:
-                bot.send_message(chat_id=message.chat.id, text=caption, parse_mode="HTML", reply_markup=markup)
+                bot.send_message(
+                    chat_id=message.chat.id,
+                    text=caption,
+                    parse_mode="HTML",
+                    reply_markup=markup
+                )
         except Exception as e:
             print(f"Error sending movie {name}: {e}")
-            bot.send_message(chat_id=message.chat.id, text=f"{name}\n\n{description[:500]}", reply_markup=markup)
+            bot.send_message(
+                chat_id=message.chat.id,
+                text=f"{name}\n\n{description[:500]}",
+                reply_markup=markup
+            )
+
+       
 
 # ----------------- Run Bot -----------------
 if __name__ == "__main__":
