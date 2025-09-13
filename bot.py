@@ -8,7 +8,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("Bot token not found in environment variables!")
 
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=True)
 
 # ----------------- API Config -----------------
 HEADERS = {
@@ -118,5 +118,6 @@ def handle_message(message):
        
 
 # ----------------- Run Bot -----------------
+
 if __name__ == "__main__":
-    bot.infinity_polling()
+    bot.infinity_polling(none_stop=True, timeout=10)
