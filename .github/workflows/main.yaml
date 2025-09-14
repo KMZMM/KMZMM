@@ -1,13 +1,20 @@
 name: Run Telegram Bot with Local API Server
 
 on:
-  workflow_dispatch: # Allows you to trigger the workflow manually
-  # You can also add triggers like push or schedule if you want it to run automatically
+  workflow_dispatch: # Manual trigger
+  # schedule:
+  #   - cron: '0 */6 * * *' # Optional: run every 6 hours to keep alive
+
+env:
+  BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+  API_ID: ${{ secrets.API_ID }}
+  API_HASH: ${{ secrets.API_HASH }}
+  NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Adjust as needed. GitHub has a 6h limit for paid plans.
+    timeout-minutes: 60 # Increased for large file handling
 
     steps:
     - name: Checkout repository
@@ -20,13 +27,13 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        pip install pyTelegramBotAPI requests
+        pip install pyTelegramBotAPI requests python-telegram-bot jq
 
-    - name: Download and install Ngrok
-      uses: crazy-max/ghaction-setup-ngrok@v3
+    - name: Setup Ngrok (Official Action)
+      uses: ngrok/setup-ngrok@v1
       with:
-        ngrok-auth: ${{ secrets.NGROK_AUTHTOKEN }} # Store your token in repo Secrets > Actions
-        # ngrok-config: ${{ github.workspace }}/ngrok.yml
+        ngrok-version: latest
+        auth-token: ${{ secrets.NGROK_AUTH_TOKEN }}
 
     - name: Download Telegram Bot API Server
       run: |
@@ -34,6 +41,7 @@ jobs:
         tar -xzf telegram-bot-api.tar.gz
         chmod +x telegram-bot-api
         sudo mv telegram-bot-api /usr/local/bin/
+        telegram-bot-api --version
 
     - name: Create Bot API config file
       run: |
@@ -47,40 +55,46 @@ jobs:
           },
           "tg": {
             "use_test_dc": false,
-            "api_id": "${{ secrets.API_ID }}", # Store in Secrets
-            "api_hash": "${{ secrets.API_HASH }}", # Store in Secrets
+            "api_id": "$API_ID",
+            "api_hash": "$API_HASH",
             "stats_enabled": false
           }
         }
         EOL
 
-    - name: Start Ngrok tunnel (for Webhook)
+    - name: Start Ngrok tunnel and extract URL
       run: |
-        # Start ngrok tunnel to port 8081 in the background
-        ngrok http 8081 > /dev/null &
-        sleep 5 # Wait for ngrok to start
-
-        # Extract the public URL assigned by ngrok
+        # Start ngrok tunnel in background
+        ngrok http 8081 --log=stdout > ngrok.log 2>&1 &
+        
+        # Wait for ngrok to start
+        sleep 10
+        
+        # Extract the public URL using proper JSON parsing
         NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto=="https") | .public_url')
-        echo "Ngrok URL: $NGROK_URL"
-
-        # Set the ngrok URL as an environment variable for the next steps
+        
+        if [ -z "$NGROK_URL" ]; then
+          echo "❌ Failed to get Ngrok URL. Ngrok log:"
+          cat ngrok.log
+          exit 1
+        fi
+        
+        echo "✅ Ngrok URL: $NGROK_URL"
         echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
 
     - name: Start Local Bot API Server
       run: |
-        # Start the server with our config in the background
-        telegram-bot-api --config=config.json --http-port=8081 &
-        sleep 5 # Wait for the server to start
+        # Start the server in background
+        telegram-bot-api --config=config.json --http-port=8081 --log=bot-api.log &
+        sleep 8 # Give it time to initialize
+        echo "✅ Bot API Server started"
 
     - name: Set Webhook to our Ngrok URL
       run: |
-        # Tell Telegram to send updates to our ngrok URL, not api.telegram.org
-        curl -F "url=$NGROK_URL/webhook" "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/setWebhook"
+        echo "Setting webhook to: $NGROK_URL/webhook"
+        curl -s -f -X GET "https://api.telegram.org/bot$BOT_TOKEN/setWebhook?url=$NGROK_URL/webhook" || echo "Webhook set request completed"
 
     - name: Run our Python Bot Script
-      env:
-        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        # The bot script will use http://localhost:8081 to make API calls
       run: |
+        echo "Starting bot with token: $BOT_TOKEN"
         python your_bot_script.py
