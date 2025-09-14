@@ -1,37 +1,86 @@
-name: tblib Server Test
+name: Run Telegram Bot with Local API Server
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch: # Allows you to trigger the workflow manually
+  # You can also add triggers like push or schedule if you want it to run automatically
 
 jobs:
-  tblib-server:
+  run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # Adjust as needed. GitHub has a 6h limit for paid plans.
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.8
+        python-version: '3.11'
 
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install tblib
+        pip install pyTelegramBotAPI requests
 
-    - name: Start tblib server
-      run: |
-        nohup python -m tblib.server &
-        sleep 5  # Wait for server to start
+    - name: Download and install Ngrok
+      uses: crazy-max/ghaction-setup-ngrok@v3
+      with:
+        ngrok-auth: ${{ secrets.NGROK_AUTHTOKEN }} # Store your token in repo Secrets > Actions
+        # ngrok-config: ${{ github.workspace }}/ngrok.yml
 
-    - name: Run test script
+    - name: Download Telegram Bot API Server
       run: |
-        python your_test_script.py  # Interact with your tblib server from a test script
+        wget -O telegram-bot-api.tar.gz https://github.com/tdlib/telegram-bot-api/releases/download/v1.8.4/telegram-bot-api_Linux_x86_64.tar.gz
+        tar -xzf telegram-bot-api.tar.gz
+        chmod +x telegram-bot-api
+        sudo mv telegram-bot-api /usr/local/bin/
 
-    - name: Clean up
+    - name: Create Bot API config file
       run: |
-        pkill -f tblib.server  # Clean up the server after the test
+        cat > config.json <<EOL
+        {
+          "local": true,
+          "stats_output_path": "",
+          "http": {
+            "port": 8081,
+            "url": ""
+          },
+          "tg": {
+            "use_test_dc": false,
+            "api_id": "${{ secrets.API_ID }}", # Store in Secrets
+            "api_hash": "${{ secrets.API_HASH }}", # Store in Secrets
+            "stats_enabled": false
+          }
+        }
+        EOL
+
+    - name: Start Ngrok tunnel (for Webhook)
+      run: |
+        # Start ngrok tunnel to port 8081 in the background
+        ngrok http 8081 > /dev/null &
+        sleep 5 # Wait for ngrok to start
+
+        # Extract the public URL assigned by ngrok
+        NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto=="https") | .public_url')
+        echo "Ngrok URL: $NGROK_URL"
+
+        # Set the ngrok URL as an environment variable for the next steps
+        echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
+
+    - name: Start Local Bot API Server
+      run: |
+        # Start the server with our config in the background
+        telegram-bot-api --config=config.json --http-port=8081 &
+        sleep 5 # Wait for the server to start
+
+    - name: Set Webhook to our Ngrok URL
+      run: |
+        # Tell Telegram to send updates to our ngrok URL, not api.telegram.org
+        curl -F "url=$NGROK_URL/webhook" "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/setWebhook"
+
+    - name: Run our Python Bot Script
+      env:
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        # The bot script will use http://localhost:8081 to make API calls
+      run: |
+        python your_bot_script.py
