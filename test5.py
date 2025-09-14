@@ -4,14 +4,14 @@ from pyrogram import Client
 from telebot import TeleBot
 
 # ------------------ BOT SETUP ------------------
-BOT_TOKEN = "YOUR_BOT_TOKEN"      # Bot API token
+BOT_TOKEN = "7991946715:AAEbPVCT_MZcgIpz5nGS5SwtbtEpiIJwEOQ"      # Bot API token
 bot = TeleBot(BOT_TOKEN)
 
 # ---------------- USERBOT SETUP ----------------
 USERBOT_SESSION = "user.session"  # Pyrogram session file
-API_ID = 123456                   # Your API ID
-API_HASH = "your_api_hash"
-UPLOAD_CHAT = "@YourChannelName"  # Channel or group to upload movies
+API_ID = 24369889                   # Your API ID
+API_HASH = "e5269c9b7062513f9efc5be5cd51dbd7"
+UPLOAD_CHAT = "@newchkmzmm"  # Channel or group to upload movies
 
 # Initialize Pyrogram client
 userbot = Client(USERBOT_SESSION, api_id=API_ID, api_hash=API_HASH)
