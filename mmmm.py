@@ -1,11 +1,9 @@
 import os
 import requests
 from pyrogram import Client
-from pyrogram.types import InputMediaDocument
 from telebot import TeleBot
-from telebot.types import Message
 import asyncio
-from threading import Thread
+import threading
 import time
 
 # ------------------ BOT SETUP ------------------
@@ -34,6 +32,18 @@ download_total = 0
 upload_total = 0
 last_progress_time = 0
 
+# Create a separate event loop for the uploader
+upload_loop = asyncio.new_event_loop()
+
+def run_upload_loop():
+    """Run the upload event loop in a separate thread."""
+    asyncio.set_event_loop(upload_loop)
+    upload_loop.run_forever()
+
+# Start the upload loop in a separate thread
+upload_thread = threading.Thread(target=run_upload_loop, daemon=True)
+upload_thread.start()
+
 # ---------------- HELPER FUNCTIONS ----------------
 def download_file(url, filename, message):
     """Download file from URL with progress."""
@@ -59,11 +69,24 @@ def download_file(url, filename, message):
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"📥 Downloading {filename}: {progress:.1f}%"
+                            text=f"📥 Downloading {filename}: {progress:.1f}% ({total_downloaded/1024/1024:.1f} MB / {download_total/1024/1024:.1f} MB)"
                         )
                     except:
                         pass  # Ignore message edit errors
                     last_progress_time = time.time()
+
+async def async_upload_file(filename, progress_callback=None):
+    """Upload file using userbot (async version)."""
+    try:
+        await userbot.send_document(
+            UPLOAD_CHAT, 
+            filename,
+            progress=progress_callback
+        )
+        return True
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return False
 
 def upload_with_progress(filename, message):
     """Upload file using userbot with progress updates."""
@@ -75,7 +98,7 @@ def upload_with_progress(filename, message):
     last_progress_time = time.time()
     
     # Create a custom callback for progress
-    def progress(current, total):
+    async def progress_callback(current, total):
         global total_uploaded, last_progress_time
         
         total_uploaded = current
@@ -87,27 +110,25 @@ def upload_with_progress(filename, message):
                 bot.edit_message_text(
                     chat_id=message.chat.id,
                     message_id=message.message_id,
-                    text=f"📤 Uploading {filename}: {progress_percent:.1f}%"
+                    text=f"📤 Uploading {filename}: {progress_percent:.1f}% ({current/1024/1024:.1f} MB / {total/1024/1024:.1f} MB)"
                 )
             except:
                 pass  # Ignore message edit errors
             last_progress_time = time.time()
     
-    # Run the upload in the event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Run the upload in the dedicated upload loop
+    future = asyncio.run_coroutine_threadsafe(
+        async_upload_file(filename, progress_callback), 
+        upload_loop
+    )
     
-    with userbot:
-        try:
-            userbot.send_document(
-                UPLOAD_CHAT, 
-                filename,
-                progress=progress
-            )
-            return True
-        except Exception as e:
-            print(f"Upload error: {e}")
-            return False
+    try:
+        # Wait for the upload to complete with a timeout (6 hours)
+        success = future.result(timeout=21600)
+        return success
+    except Exception as e:
+        print(f"Upload future error: {e}")
+        return False
 
 # ---------------- BOT HANDLER ----------------
 @bot.message_handler(commands=["start"])
@@ -124,7 +145,7 @@ def handle_link(message):
         return
     
     # Extract filename from URL or use default
-    filename = os.path.basename(url) or "file.bin"
+    filename = os.path.basename(url.split('?')[0]) or "file.bin"
     
     # Check if the filename has an extension
     if '.' not in filename:
@@ -183,15 +204,27 @@ def handle_link(message):
     finally:
         # Clean up
         if os.path.exists(filename):
-            os.remove(filename)
+            try:
+                os.remove(filename)
+            except:
+                pass
 
 # Initialize userbot session
 def init_userbot():
     try:
-        with userbot:
-            print("Userbot session ready.")
+        # Run in the upload loop thread
+        future = asyncio.run_coroutine_threadsafe(init_userbot_async(), upload_loop)
+        future.result(timeout=30)  # Wait for initialization
+        print("Userbot session ready.")
     except Exception as e:
         print(f"Userbot initialization failed: {e}")
+
+async def init_userbot_async():
+    """Async version of userbot initialization."""
+    await userbot.start()
+    # Test the connection
+    me = await userbot.get_me()
+    print(f"Userbot connected as: {me.first_name} ({me.id})")
 
 # ---------------- START BOT ----------------
 if __name__ == "__main__":
@@ -199,4 +232,10 @@ if __name__ == "__main__":
     init_userbot()
     
     print("Bot is running...")
-    bot.infinity_polling()
+    try:
+        bot.infinity_polling()
+    except KeyboardInterrupt:
+        print("Shutting down...")
+        # Stop the upload loop
+        upload_loop.call_soon_threadsafe(upload_loop.stop)
+        upload_thread.join(timeout=5)
