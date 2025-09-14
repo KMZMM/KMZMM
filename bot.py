@@ -12,7 +12,7 @@ import asyncio
 import threading
 
 # ----------------- Bot Setup -----------------
-BOT_TOKEN = "7256834308:AAH-YzGauoYaMQsnRNxbqG7FutO9FjcM6ac"
+BOT_TOKEN = "8011361961:AAGNU9RCAq3pcUDmKljgGnm7VXsta4P6dDY"
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=True)
 
