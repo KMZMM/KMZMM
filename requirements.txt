@@ -3,3 +3,4 @@ requests
 pycryptodome
 telebot
 aiohttp
+beautifulsoup4
