@@ -292,7 +292,7 @@ def process_search(message, keyword):
                         generated_url = generate_video_url(video_url)
                         if generated_url:
                             # Direct URL - use as is (single URL encoding)
-                            final_url = f"https://kmzmm.github.io/KMZMM/player.html?video={generated_url}"
+                            final_url = f"{generated_url}"
                         else:
                             # Fallback: try to construct URL from filename
                             final_url = f"https://kmzmm.github.io/KMZMM/player.html?video=https://msubyoteshin.net/{urllib.parse.quote(video_url)}"
