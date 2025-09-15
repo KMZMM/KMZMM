@@ -286,7 +286,7 @@ def process_search(message, keyword):
                     # Check if URL is a direct link or needs generation
                     if video_url.startswith(('http://', 'https://')):
                         # Direct URL - use as is (single URL encoding)
-                        final_url = f"https://kmzmm.github.io/KMZMM/player.html?video={video_url}"
+                        final_url = f"{video_url}"
                     else:
                         # File name - generate URL first
                         generated_url = generate_video_url(video_url)
