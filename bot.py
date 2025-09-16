@@ -243,7 +243,7 @@ def process_search(message, keyword):
 
         # Handle encoding issues and limit description length
         try:
-            max_desc_length = 800
+            max_desc_length = 10000
             safe_description = description
             if len(description) > max_desc_length:
                 safe_description = description[:max_desc_length] + "..."
